@@ -1,7 +1,9 @@
+let pieces = [];
 let gameStarted = false;
 let timer;
 let seconds = 0;
 let moves = 0;
+let showNumbers = false;
 
 const puzzle = document.getElementById('puzzle');
 const previewImage = document.getElementById('previewImage');
@@ -23,19 +25,21 @@ function toggleTheme() {
 }
 
 function startGame() {
+    const startButton = document.getElementById('startGame');
     if (!gameStarted) {
         gameStarted = true;
-        document.getElementById('startGame').innerHTML = '<i class="fas fa-pause"></i> Pause';
+        initGame();
+        startTimer();
+        startButton.innerHTML = '<i class="fas fa-pause"></i> Pause';
         document.getElementById('shuffleGame').disabled = false;
         document.getElementById('showNumbers').disabled = false;
         document.getElementById('freezeTime').disabled = false;
         document.getElementById('autoSolve').disabled = false;
         document.getElementById('showHint').disabled = false;
-        startTimer();
     } else {
         gameStarted = false;
         clearInterval(timer);
-        document.getElementById('startGame').innerHTML = '<i class="fas fa-play"></i> Resume';
+        startButton.innerHTML = '<i class="fas fa-play"></i> Resume';
         document.getElementById('shuffleGame').disabled = true;
         document.getElementById('showNumbers').disabled = true;
         document.getElementById('freezeTime').disabled = true;
@@ -44,14 +48,161 @@ function startGame() {
     }
 }
 
+function initGame() {
+    const gridSize = Math.sqrt(parseInt(document.getElementById('difficulty').value));
+    const totalWidth = puzzle.offsetWidth;
+    const pieceWidth = totalWidth / gridSize;
+    const pieceHeight = pieceWidth;
+    
+    pieces = [];
+    puzzle.innerHTML = '';
+    moves = 0;
+    movesDisplay.textContent = '0';
+    
+    for (let i = 0; i < gridSize * gridSize; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'puzzle-piece';
+        piece.style.width = pieceWidth + 'px';
+        piece.style.height = pieceHeight + 'px';
+        
+        const row = Math.floor(i / gridSize);
+        const col = i % gridSize;
+        
+        const bgWidth = puzzle.offsetWidth;
+        const bgHeight = puzzle.offsetHeight;
+        
+        piece.style.backgroundImage = `url(${previewImage.src})`;
+        piece.style.backgroundSize = `${bgWidth}px ${bgHeight}px`;
+        piece.style.backgroundPosition = `-${col * pieceWidth}px -${row * pieceHeight}px`;
+        
+        piece.dataset.correctRow = row;
+        piece.dataset.correctCol = col;
+        
+        if (showNumbers) {
+            piece.innerHTML = `<span>${i + 1}</span>`;
+        }
+        
+        pieces.push(piece);
+        piece.draggable = true;
+        addDragListeners(piece);
+        puzzle.appendChild(piece);
+    }
+    
+    shufflePieces();
+    updateProgress();
+}
+
+function addDragListeners(piece) {
+    piece.addEventListener('dragstart', handleDragStart);
+    piece.addEventListener('dragend', handleDragEnd);
+    piece.addEventListener('dragover', handleDragOver);
+    piece.addEventListener('drop', handleDrop);
+}
+
+function handleDragStart(e) {
+    if (!gameStarted) return;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd() {
+    this.classList.remove('dragging');
+    checkWin();
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    if (!gameStarted) return;
+    
+    const draggingPiece = document.querySelector('.dragging');
+    if (draggingPiece && draggingPiece !== this) {
+        swapPieces(draggingPiece, this);
+        moves++;
+        movesDisplay.textContent = moves;
+        checkWin();
+    }
+}
+
+function swapPieces(piece1, piece2) {
+    const rect1 = piece1.getBoundingClientRect();
+    const rect2 = piece2.getBoundingClientRect();
+    
+    const tempLeft = piece1.style.left;
+    const tempTop = piece1.style.top;
+    
+    piece1.style.left = piece2.style.left;
+    piece1.style.top = piece2.style.top;
+    piece2.style.left = tempLeft;
+    piece2.style.top = tempTop;
+    
+    const index1 = pieces.indexOf(piece1);
+    const index2 = pieces.indexOf(piece2);
+    [pieces[index1], pieces[index2]] = [pieces[index2], pieces[index1]];
+    
+    checkCorrectPositions();
+    updateProgress();
+}
+
 function shufflePieces() {
     if (!gameStarted) return;
-    moves++;
-    movesDisplay.textContent = moves;
+    
+    const gridSize = Math.sqrt(pieces.length);
+    pieces.forEach((piece, index) => {
+        const left = (index % gridSize) * (puzzle.offsetWidth / gridSize);
+        const top = Math.floor(index / gridSize) * (puzzle.offsetHeight / gridSize);
+        piece.style.left = left + 'px';
+        piece.style.top = top + 'px';
+    });
+    
+    for (let i = pieces.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        swapPieces(pieces[i], pieces[j]);
+    }
+}
+
+function checkCorrectPositions() {
+    const gridSize = Math.sqrt(pieces.length);
+    pieces.forEach(piece => {
+        const currentCol = Math.round(piece.offsetLeft / (puzzle.offsetWidth / gridSize));
+        const currentRow = Math.round(piece.offsetTop / (puzzle.offsetHeight / gridSize));
+        
+        if (currentRow === parseInt(piece.dataset.correctRow) && 
+            currentCol === parseInt(piece.dataset.correctCol)) {
+            piece.classList.add('correct');
+        } else {
+            piece.classList.remove('correct');
+        }
+    });
+}
+
+function updateProgress() {
+    const correctPieces = document.querySelectorAll('.puzzle-piece.correct').length;
+    const progress = (correctPieces / pieces.length) * 100;
+    progressBar.style.width = progress + '%';
+}
+
+function checkWin() {
+    const allCorrect = pieces.every(piece => piece.classList.contains('correct'));
+    if (allCorrect) {
+        clearInterval(timer);
+        alert('Congratulations! You won!');
+    }
 }
 
 function toggleNumbers() {
     if (!gameStarted) return;
+    showNumbers = !showNumbers;
+    pieces.forEach((piece, index) => {
+        piece.innerHTML = showNumbers ? `<span>${index + 1}</span>` : '';
+    });
 }
 
 function startTimer() {
@@ -74,8 +225,13 @@ function handleImageUpload(e) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
+            img.onload = function() {
+                previewImage.src = img.src;
+                if (gameStarted) {
+                    initGame();
+                }
+            };
             img.src = e.target.result;
-            previewImage.src = img.src;
         };
         reader.readAsDataURL(file);
     }
@@ -83,6 +239,9 @@ function handleImageUpload(e) {
 
 window.addEventListener('load', () => {
     const defaultImage = new Image();
+    defaultImage.onload = function() {
+        previewImage.src = defaultImage.src;
+        initGame();
+    };
     defaultImage.src = 'https://picsum.photos/400/400';
-    previewImage.src = defaultImage.src;
 });
