@@ -1,0 +1,1 @@
+console.log('Jigsaw Puzzle Game Initialized');

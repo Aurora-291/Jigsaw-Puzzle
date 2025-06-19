@@ -1,0 +1,40 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #070720;
+    color: #e2e4ff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.game-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    font-size: 3.5em;
+    color: #7b2cbf;
+    margin-bottom: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.puzzle-board {
+    width: 400px;
+    height: 400px;
+    background: #1a1b4b;
+    border-radius: 20px;
+    position: relative;
+    margin: 0 auto;
+}
