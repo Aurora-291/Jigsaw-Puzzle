@@ -60,11 +60,142 @@ function initGame() {
         piece.dataset.correctCol = col;
         
         pieces.push(piece);
+        piece.draggable = true;
+        addDragListeners(piece);
         puzzle.appendChild(piece);
     }
     
     shufflePieces();
     updateProgress();
+}
+
+function addDragListeners(piece) {
+    piece.addEventListener('dragstart', handleDragStart);
+    piece.addEventListener('dragend', handleDragEnd);
+    piece.addEventListener('dragover', handleDragOver);
+    piece.addEventListener('drop', handleDrop);
+    piece.addEventListener('touchstart', handleTouchStart);
+    piece.addEventListener('touchmove', handleTouchMove);
+    piece.addEventListener('touchend', handleTouchEnd);
+}
+
+function handleDragStart(e) {
+    if (!gameStarted) return;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd() {
+    this.classList.remove('dragging');
+    checkWin();
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    if (!gameStarted) return;
+    
+    const draggingPiece = document.querySelector('.dragging');
+    if (draggingPiece && draggingPiece !== this) {
+        swapPieces(draggingPiece, this);
+        moves++;
+        movesDisplay.textContent = moves;
+        checkWin();
+    }
+}
+
+let touchStartX, touchStartY, touchPiece;
+
+function handleTouchStart(e) {
+    if (!gameStarted) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchPiece = this;
+    this.classList.add('dragging');
+}
+
+function handleTouchMove(e) {
+    if (!touchPiece) return;
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    
+    touchPiece.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+}
+
+function handleTouchEnd(e) {
+    if (!touchPiece) return;
+    e.preventDefault();
+    
+    const touch = e.changedTouches[0];
+    const endX = touch.clientX;
+    const endY = touch.clientY;
+    
+    const targetElement = document.elementFromPoint(endX, endY);
+    if (targetElement && targetElement.classList.contains('puzzle-piece') && targetElement !== touchPiece) {
+        swapPieces(touchPiece, targetElement);
+        moves++;
+        movesDisplay.textContent = moves;
+    }
+    
+    touchPiece.style.transform = '';
+    touchPiece.classList.remove('dragging');
+    touchPiece = null;
+    checkWin();
+}
+
+function swapPieces(piece1, piece2) {
+    const rect1 = piece1.getBoundingClientRect();
+    const rect2 = piece2.getBoundingClientRect();
+    
+    const tempLeft = piece1.style.left;
+    const tempTop = piece1.style.top;
+    
+    piece1.style.left = piece2.style.left;
+    piece1.style.top = piece2.style.top;
+    piece2.style.left = tempLeft;
+    piece2.style.top = tempTop;
+    
+    const index1 = pieces.indexOf(piece1);
+    const index2 = pieces.indexOf(piece2);
+    [pieces[index1], pieces[index2]] = [pieces[index2], pieces[index1]];
+    
+    checkCorrectPositions();
+    updateProgress();
+}
+
+function checkCorrectPositions() {
+    const gridSize = Math.sqrt(pieces.length);
+    pieces.forEach(piece => {
+        const currentCol = Math.round(piece.offsetLeft / (puzzle.offsetWidth / gridSize));
+        const currentRow = Math.round(piece.offsetTop / (puzzle.offsetHeight / gridSize));
+        
+        if (currentRow === parseInt(piece.dataset.correctRow) && 
+            currentCol === parseInt(piece.dataset.correctCol)) {
+            piece.classList.add('correct');
+        } else {
+            piece.classList.remove('correct');
+        }
+    });
+}
+
+function checkWin() {
+    const allCorrect = pieces.every(piece => piece.classList.contains('correct'));
+    if (allCorrect) {
+        clearInterval(timer);
+        alert('Congratulations! You won!');
+    }
 }
 
 function shufflePieces() {
@@ -80,12 +211,7 @@ function shufflePieces() {
     
     for (let i = pieces.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        const tempLeft = pieces[i].style.left;
-        const tempTop = pieces[i].style.top;
-        pieces[i].style.left = pieces[j].style.left;
-        pieces[i].style.top = pieces[j].style.top;
-        pieces[j].style.left = tempLeft;
-        pieces[j].style.top = tempTop;
+        swapPieces(pieces[i], pieces[j]);
     }
 }
 

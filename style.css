@@ -8,11 +8,13 @@
     --dark-shadow: rgba(123, 44, 191, 0.3);
 }
 
-
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    transition: background-color 0.3s, color 0.3s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
 }
 
 body {
@@ -21,7 +23,7 @@ body {
     font-family: 'Segoe UI', system-ui, sans-serif;
     min-height: 100vh;
     padding: 20px;
-    transition: background-color 0.3s, color 0.3s;
+    overscroll-behavior: none;
 }
 
 .game-wrapper {
@@ -61,6 +63,7 @@ body {
     box-shadow: 0 8px 30px var(--dark-shadow);
     border: 2px solid var(--dark-border);
     overflow: hidden;
+    touch-action: none;
 }
 
 .puzzle-container {
@@ -75,7 +78,13 @@ body {
     border: 2px solid var(--dark-border);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     background-size: cover;
+    touch-action: none;
     user-select: none;
+}
+
+.puzzle-piece.dragging {
+    opacity: 0.8;
+    z-index: 1000;
 }
 
 .puzzle-piece:hover {
