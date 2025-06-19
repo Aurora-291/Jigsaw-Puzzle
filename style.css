@@ -69,6 +69,26 @@ body {
     max-width: 600px;
 }
 
+.puzzle-piece {
+    position: absolute;
+    cursor: move;
+    border: 2px solid var(--dark-border);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background-size: cover;
+    user-select: none;
+}
+
+.puzzle-piece:hover {
+    transform: scale(1.05);
+    z-index: 10;
+    box-shadow: 0 0 20px var(--dark-shadow);
+}
+
+.puzzle-piece.correct {
+    border-color: var(--dark-accent);
+    box-shadow: 0 0 20px var(--dark-accent);
+}
+
 .stats-bar {
     display: flex;
     justify-content: center;
