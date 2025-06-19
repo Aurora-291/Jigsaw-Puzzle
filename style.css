@@ -1,3 +1,14 @@
+:root {
+    --dark-primary: #1a1b4b;
+    --dark-secondary: #0f1035;
+    --dark-accent: #7b2cbf;
+    --dark-text: #e2e4ff;
+    --dark-border: #4a4f9c;
+    --dark-background: #070720;
+    --dark-shadow: rgba(123, 44, 191, 0.3);
+}
+
+
 * {
     margin: 0;
     padding: 0;
@@ -5,11 +16,12 @@
 }
 
 body {
-    background-color: #070720;
-    color: #e2e4ff;
+    background-color: var(--dark-background);
+    color: var(--dark-text);
     font-family: 'Segoe UI', system-ui, sans-serif;
     min-height: 100vh;
     padding: 20px;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .game-wrapper {
@@ -24,17 +36,35 @@ body {
 
 .header h1 {
     font-size: 3.5em;
-    color: #7b2cbf;
+    background: linear-gradient(45deg, var(--dark-accent), #ff6b6b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     margin-bottom: 10px;
     font-weight: 800;
     letter-spacing: 2px;
 }
 
+.nebula-line {
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--dark-accent), transparent);
+    margin: 0 auto;
+    width: 200px;
+    box-shadow: 0 0 20px var(--dark-shadow);
+}
+
 .puzzle-board {
-    width: 400px;
-    height: 400px;
-    background: #1a1b4b;
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--dark-primary);
     border-radius: 20px;
     position: relative;
-    margin: 0 auto;
+    box-shadow: 0 8px 30px var(--dark-shadow);
+    border: 2px solid var(--dark-border);
+    overflow: hidden;
+}
+
+.puzzle-container {
+    flex: 1;
+    min-width: 300px;
+    max-width: 600px;
 }
