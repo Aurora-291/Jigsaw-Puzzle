@@ -7,7 +7,14 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="dark-theme">
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeSwitch">
+        <label for="themeSwitch">
+            <i class="fas fa-sun"></i>
+            <i class="fas fa-moon"></i>
+        </label>
+    </div>
     <div class="game-wrapper">
         <div class="header">
             <h1>Jigsaw Puzzle</h1>
@@ -42,6 +49,21 @@
                 </button>
                 <button id="shuffleGame" class="cosmic-button" disabled>
                     <i class="fas fa-atom"></i> Realign
+                </button>
+                <button id="showNumbers" class="cosmic-button" disabled>
+                    <i class="fas fa-hashtag"></i> Coordinates
+                </button>
+            </div>
+
+            <div class="power-ups">
+                <button id="freezeTime" class="power-button" data-count="3" disabled>
+                    <i class="fas fa-clock"></i>
+                </button>
+                <button id="autoSolve" class="power-button" data-count="1" disabled>
+                    <i class="fas fa-wand-sparkles"></i>
+                </button>
+                <button id="showHint" class="power-button" data-count="3" disabled>
+                    <i class="fas fa-satellite"></i>
                 </button>
             </div>
         </div>

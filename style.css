@@ -6,6 +6,13 @@
     --dark-border: #4a4f9c;
     --dark-background: #070720;
     --dark-shadow: rgba(123, 44, 191, 0.3);
+    --light-primary: #e6e7ff;
+    --light-secondary: #f0f1ff;
+    --light-accent: #9d4edd;
+    --light-text: #1a1b4b;
+    --light-border: #b8b9ff;
+    --light-background: #ffffff;
+    --light-shadow: rgba(157, 78, 221, 0.3);
 }
 
 * {
@@ -25,6 +32,27 @@ body {
     padding: 20px;
     overscroll-behavior: none;
 }
+
+.dark-theme {
+    --primary: var(--dark-primary);
+    --secondary: var(--dark-secondary);
+    --accent: var(--dark-accent);
+    --text: var(--dark-text);
+    --border: var(--dark-border);
+    --background: var(--dark-background);
+    --shadow: var(--dark-shadow);
+}
+
+.light-theme {
+    --primary: var(--light-primary);
+    --secondary: var(--light-secondary);
+    --accent: var(--light-accent);
+    --text: var(--light-text);
+    --border: var(--light-border);
+    --background: var(--light-background);
+    --shadow: var(--light-shadow);
+}
+
 
 .game-wrapper {
     max-width: 1200px;
