@@ -15,24 +15,6 @@
     --light-shadow: rgba(157, 78, 221, 0.3);
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    transition: background-color 0.3s, color 0.3s;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: none;
-}
-
-body {
-    background-color: var(--dark-background);
-    color: var(--dark-text);
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    min-height: 100vh;
-    padding: 20px;
-    overscroll-behavior: none;
-}
-
 .dark-theme {
     --primary: var(--dark-primary);
     --secondary: var(--dark-secondary);
@@ -53,6 +35,62 @@ body {
     --shadow: var(--light-shadow);
 }
 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body {
+    background-color: var(--background);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.theme-toggle input {
+    display: none;
+}
+
+.theme-toggle label {
+    cursor: pointer;
+    padding: 10px;
+    background: var(--primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px var(--shadow);
+}
+
+.theme-toggle .fa-sun {
+    display: none;
+    color: var(--accent);
+}
+
+.theme-toggle .fa-moon {
+    display: block;
+    color: var(--accent);
+}
+
+.light-theme .theme-toggle .fa-sun {
+    display: block;
+}
+
+.light-theme .theme-toggle .fa-moon {
+    display: none;
+}
 
 .game-wrapper {
     max-width: 1200px;
@@ -66,7 +104,7 @@ body {
 
 .header h1 {
     font-size: 3.5em;
-    background: linear-gradient(45deg, var(--dark-accent), #ff6b6b);
+    background: linear-gradient(45deg, var(--accent), #ff6b6b);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 10px;
@@ -76,54 +114,10 @@ body {
 
 .nebula-line {
     height: 3px;
-    background: linear-gradient(90deg, transparent, var(--dark-accent), transparent);
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
     margin: 0 auto;
     width: 200px;
-    box-shadow: 0 0 20px var(--dark-shadow);
-}
-
-.puzzle-board {
-    width: 100%;
-    aspect-ratio: 1;
-    background: var(--dark-primary);
-    border-radius: 20px;
-    position: relative;
-    box-shadow: 0 8px 30px var(--dark-shadow);
-    border: 2px solid var(--dark-border);
-    overflow: hidden;
-    touch-action: none;
-}
-
-.puzzle-container {
-    flex: 1;
-    min-width: 300px;
-    max-width: 600px;
-}
-
-.puzzle-piece {
-    position: absolute;
-    cursor: move;
-    border: 2px solid var(--dark-border);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    background-size: cover;
-    touch-action: none;
-    user-select: none;
-}
-
-.puzzle-piece.dragging {
-    opacity: 0.8;
-    z-index: 1000;
-}
-
-.puzzle-piece:hover {
-    transform: scale(1.05);
-    z-index: 10;
-    box-shadow: 0 0 20px var(--dark-shadow);
-}
-
-.puzzle-piece.correct {
-    border-color: var(--dark-accent);
-    box-shadow: 0 0 20px var(--dark-accent);
+    box-shadow: 0 0 20px var(--shadow);
 }
 
 .stats-bar {
@@ -134,37 +128,37 @@ body {
 }
 
 .stat-box {
-    background: var(--dark-primary);
+    background: var(--primary);
     padding: 15px 30px;
     border-radius: 15px;
     display: flex;
     align-items: center;
     gap: 10px;
-    box-shadow: 0 4px 15px var(--dark-shadow);
-    border: 1px solid var(--dark-border);
+    box-shadow: 0 4px 15px var(--shadow);
+    border: 1px solid var(--border);
 }
 
 .stat-box i {
-    color: var(--dark-accent);
+    color: var(--accent);
     font-size: 1.2em;
 }
 
 .control-panel {
-    background: var(--dark-primary);
+    background: var(--primary);
     padding: 25px;
     border-radius: 20px;
     margin-bottom: 30px;
     display: grid;
     gap: 25px;
-    border: 1px solid var(--dark-border);
-    box-shadow: 0 8px 30px var(--dark-shadow);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 30px var(--shadow);
 }
 
 .cosmic-select {
-    background: var(--dark-secondary);
-    color: var(--dark-text);
+    background: var(--secondary);
+    color: var(--text);
     padding: 12px;
-    border: 2px solid var(--dark-border);
+    border: 2px solid var(--border);
     border-radius: 12px;
     width: 100%;
     cursor: pointer;
@@ -179,9 +173,9 @@ body {
 }
 
 .cosmic-button {
-    background: var(--dark-secondary);
-    color: var(--dark-text);
-    border: 2px solid var(--dark-border);
+    background: var(--secondary);
+    color: var(--text);
+    border: 2px solid var(--border);
     padding: 12px 25px;
     border-radius: 12px;
     cursor: pointer;
@@ -195,10 +189,10 @@ body {
 }
 
 .cosmic-button:hover:not(:disabled) {
-    background: var(--dark-accent);
-    border-color: var(--dark-accent);
+    background: var(--accent);
+    border-color: var(--accent);
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px var(--dark-shadow);
+    box-shadow: 0 5px 15px var(--shadow);
 }
 
 .cosmic-button:disabled {
@@ -207,8 +201,55 @@ body {
 }
 
 .cosmic-button.primary {
-    background: var(--dark-accent);
-    border-color: var(--dark-accent);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.power-ups {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.power-button {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--secondary);
+    border: 2px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+    font-size: 1.2em;
+}
+
+.power-button:hover:not(:disabled) {
+    transform: scale(1.1) rotate(15deg);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--shadow);
+}
+
+.power-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.power-button::after {
+    content: attr(data-count);
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--accent);
+    color: var(--text);
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border: 2px solid var(--border);
 }
 
 .game-area {
@@ -216,6 +257,23 @@ body {
     gap: 30px;
     justify-content: center;
     flex-wrap: wrap;
+}
+
+.puzzle-container {
+    flex: 1;
+    min-width: 300px;
+    max-width: 600px;
+}
+
+.puzzle-board {
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--primary);
+    border-radius: 20px;
+    position: relative;
+    box-shadow: 0 8px 30px var(--shadow);
+    border: 2px solid var(--border);
+    overflow: hidden;
 }
 
 .preview-section {
@@ -230,8 +288,8 @@ body {
     aspect-ratio: 1;
     border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 8px 30px var(--dark-shadow);
-    border: 2px solid var(--dark-border);
+    box-shadow: 0 8px 30px var(--shadow);
+    border: 2px solid var(--border);
 }
 
 .preview-box img {
@@ -243,15 +301,19 @@ body {
 .progress-container {
     width: 100%;
     height: 12px;
-    background: var(--dark-primary);
+    background: var(--primary);
     border-radius: 6px;
     overflow: hidden;
-    border: 1px solid var(--dark-border);
+    border: 1px solid var(--border);
 }
 
 .progress-bar {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, var(--dark-accent), #ff6b6b);
+    background: linear-gradient(90deg, var(--accent), #ff6b6b);
     transition: width 0.3s ease;
+}
+
+.hidden {
+    display: none;
 }
