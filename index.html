@@ -4,16 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jigsaw Puzzle</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="game-wrapper">
         <div class="header">
             <h1>Jigsaw Puzzle</h1>
+            <div class="nebula-line"></div>
         </div>
+
+        <div class="stats-bar">
+            <div class="stat-box">
+                <i class="fas fa-clock"></i>
+                <span id="time">00:00</span>
+            </div>
+            <div class="stat-box">
+                <i class="fas fa-meteor"></i>
+                <span id="moves">0</span>
+            </div>
+            <div class="stat-box">
+                <i class="fas fa-trophy"></i>
+                <span id="bestTime">--:--</span>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <select id="difficulty" class="cosmic-select">
+                <option value="9">Nebula (3x3)</option>
+                <option value="16">Galaxy (4x4)</option>
+                <option value="25">Universe (5x5)</option>
+            </select>
+
+            <div class="button-group">
+                <button id="startGame" class="cosmic-button primary">
+                    <i class="fas fa-rocket"></i> Launch
+                </button>
+                <button id="shuffleGame" class="cosmic-button" disabled>
+                    <i class="fas fa-atom"></i> Realign
+                </button>
+            </div>
+        </div>
+
         <div class="game-area">
             <div class="puzzle-container">
                 <div id="puzzle" class="puzzle-board"></div>
+            </div>
+            <div class="preview-section">
+                <div class="preview-box">
+                    <img id="previewImage" src="https://picsum.photos/400/400" alt="Default Puzzle Image">
+                </div>
+                <div class="progress-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
             </div>
         </div>
     </div>
