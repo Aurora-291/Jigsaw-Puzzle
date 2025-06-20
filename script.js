@@ -4,35 +4,34 @@ let timer;
 let seconds = 0;
 let moves = 0;
 let showNumbers = false;
-let draggedPiece = null;
-let gameMode = 'classic';
-let timeLimit = 300;
-let countdownTimer;
-let bestScores = JSON.parse(localStorage.getItem('puzzleBestScores')) || {};
-let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
-let currentScore = 0;
-let powerUps = {
-    freezeTime: 3,
-    autoSolve: 1,
-    showHint: 3
+let powerUpsActive = {
+    freezeTime: false,
+    hint: false
 };
 
-const sounds = {
-    move: document.getElementById('moveSound'),
-    correct: document.getElementById('correctSound'),
-    win: document.getElementById('winSound')
+const puzzle = document.getElementById('puzzle');
+const previewImage = document.getElementById('previewImage');
+const progressBar = document.getElementById('progressBar');
+const timeDisplay = document.getElementById('time');
+const movesDisplay = document.getElementById('moves');
+const themeSwitch = document.getElementById('themeSwitch');
+
+const powerButtons = {
+    freezeTime: document.getElementById('freezeTime'),
+    autoSolve: document.getElementById('autoSolve'),
+    showHint: document.getElementById('showHint')
 };
 
 document.getElementById('startGame').addEventListener('click', startGame);
 document.getElementById('shuffleGame').addEventListener('click', shufflePieces);
 document.getElementById('showNumbers').addEventListener('click', toggleNumbers);
+document.getElementById('freezeTime').addEventListener('click', activateFreeze);
+document.getElementById('autoSolve').addEventListener('click', activateAutoSolve);
+document.getElementById('showHint').addEventListener('click', activateHint);
 document.getElementById('uploadImage').addEventListener('click', () => document.getElementById('imageUpload').click());
 document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
-document.getElementById('freezeTime').addEventListener('click', useFreezeTime);
-document.getElementById('autoSolve').addEventListener('click', useAutoSolve);
-document.getElementById('showHint').addEventListener('click', useShowHint);
-document.getElementById('gameMode').addEventListener('change', handleGameModeChange);
-document.getElementById('soundToggle').addEventListener('click', toggleSound);
+document.getElementById('playAgain').addEventListener('click', resetGame);
+document.getElementById('shareScore').addEventListener('click', shareScore);
 themeSwitch.addEventListener('change', toggleTheme);
 
 function toggleTheme() {
@@ -49,82 +48,29 @@ function startGame() {
         startButton.innerHTML = '<i class="fas fa-pause"></i> Pause';
         document.getElementById('shuffleGame').disabled = false;
         document.getElementById('showNumbers').disabled = false;
-        document.getElementById('freezeTime').disabled = false;
-        document.getElementById('autoSolve').disabled = false;
-        document.getElementById('showHint').disabled = false;
+        enablePowerButtons();
     } else {
         gameStarted = false;
         clearInterval(timer);
         startButton.innerHTML = '<i class="fas fa-play"></i> Resume';
         document.getElementById('shuffleGame').disabled = true;
         document.getElementById('showNumbers').disabled = true;
-        document.getElementById('freezeTime').disabled = true;
-        document.getElementById('autoSolve').disabled = true;
-        document.getElementById('showHint').disabled = true;
+        disablePowerButtons();
     }
 }
 
-function toggleSound() {
-    soundEnabled = !soundEnabled;
-    localStorage.setItem('soundEnabled', soundEnabled);
-    
-    const soundButton = document.getElementById('soundToggle');
-    const icon = soundButton.querySelector('i');
-    
-    if (soundEnabled) {
-        icon.className = 'fas fa-volume-up';
-        soundButton.classList.remove('muted');
-    } else {
-        icon.className = 'fas fa-volume-mute';
-        soundButton.classList.add('muted');
-    }
+function enablePowerButtons() {
+    Object.values(powerButtons).forEach(button => {
+        if (parseInt(button.dataset.count) > 0) {
+            button.disabled = false;
+        }
+    });
 }
 
-function playSound(soundName) {
-    if (soundEnabled && sounds[soundName]) {
-        sounds[soundName].currentTime = 0;
-        sounds[soundName].play().catch(() => {});
-    }
-}
-
-function createParticles(element, count = 8) {
-    const rect = element.getBoundingClientRect();
-    const container = element.closest('.puzzle-board') || document.body;
-    
-    for (let i = 0; i < count; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = (rect.left + rect.width / 2) + 'px';
-        particle.style.top = (rect.top + rect.height / 2) + 'px';
-        particle.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
-        
-        const angle = (i / count) * Math.PI * 2;
-        const velocity = 50 + Math.random() * 50;
-        particle.style.setProperty('--dx', Math.cos(angle) * velocity + 'px');
-        particle.style.setProperty('--dy', Math.sin(angle) * velocity + 'px');
-        
-        document.body.appendChild(particle);
-        
-        setTimeout(() => particle.remove(), 2000);
-    }
-}
-
-function calculateScore() {
-    const baseScore = 1000;
-    const timePenalty = seconds * 2;
-    const movePenalty = moves * 5;
-    const difficultyBonus = parseInt(document.getElementById('difficulty').value) * 10;
-    const modeMultiplier = gameMode === 'timed' ? 1.5 : gameMode === 'endless' ? 2 : 1;
-    
-    currentScore = Math.max(0, Math.floor((baseScore - timePenalty - movePenalty + difficultyBonus) * modeMultiplier));
-    document.getElementById('currentScore').textContent = currentScore;
-}
-
-function updateHighScore() {
-    const difficulty = document.getElementById('difficulty').value;
-    const key = `${gameMode}_${difficulty}`;
-    const highScore = bestScores[key]?.score || 0;
-    document.getElementById('highScore').textContent = highScore || '--';
+function disablePowerButtons() {
+    Object.values(powerButtons).forEach(button => {
+        button.disabled = true;
+    });
 }
 
 function initGame() {
@@ -157,17 +103,9 @@ function initGame() {
         piece.dataset.correctRow = row;
         piece.dataset.correctCol = col;
         
-        pieces.forEach((piece, index) => {
         if (showNumbers) {
-            piece.innerHTML = `<span>${index + 1}</span>`;
+            piece.innerHTML = `<span>${i + 1}</span>`;
         }
-        
-        const correctPieces = document.querySelectorAll('.puzzle-piece.correct').length;
-        if (gameMode === 'endless' && correctPieces === pieces.length) {
-            levelUp();
-            return;
-        }
-    });
         
         pieces.push(piece);
         piece.draggable = true;
@@ -184,36 +122,20 @@ function addDragListeners(piece) {
     piece.addEventListener('dragend', handleDragEnd);
     piece.addEventListener('dragover', handleDragOver);
     piece.addEventListener('drop', handleDrop);
-    piece.addEventListener('dragenter', handleDragEnter);
-    piece.addEventListener('dragleave', handleDragLeave);
-    
-    piece.addEventListener('touchstart', handleTouchStart, { passive: false });
-    piece.addEventListener('touchmove', handleTouchMove, { passive: false });
-    piece.addEventListener('touchend', handleTouchEnd, { passive: false });
+    piece.addEventListener('touchstart', handleTouchStart);
+    piece.addEventListener('touchmove', handleTouchMove);
+    piece.addEventListener('touchend', handleTouchEnd);
 }
 
 function handleDragStart(e) {
     if (!gameStarted) return;
     this.classList.add('dragging');
-    draggedPiece = this;
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', this.outerHTML);
 }
 
 function handleDragEnd() {
     this.classList.remove('dragging');
-    draggedPiece = null;
-    document.querySelectorAll('.drop-zone').forEach(el => el.classList.remove('drop-zone'));
     checkWin();
-}
-function handleDragEnter(e) {
-    if (draggedPiece && draggedPiece !== this) {
-        this.classList.add('drop-zone');
-    }
-}
-
-function handleDragLeave(e) {
-    this.classList.remove('drop-zone');
 }
 
 function handleDragOver(e) {
@@ -228,80 +150,57 @@ function handleDrop(e) {
     e.preventDefault();
     if (!gameStarted) return;
     
-    this.classList.remove('drop-zone');
-    
-    if (draggedPiece && draggedPiece !== this) {
-        swapPieces(draggedPiece, this);
+    const draggingPiece = document.querySelector('.dragging');
+    if (draggingPiece && draggingPiece !== this) {
+        swapPieces(draggingPiece, this);
         moves++;
         movesDisplay.textContent = moves;
-        
-        this.classList.add('celebration');
-        setTimeout(() => this.classList.remove('celebration'), 600);
-        
         checkWin();
     }
 }
 
-
-let touchStartPos = { x: 0, y: 0 };
-let touchPiece = null;
+let touchStartX, touchStartY, touchPiece;
 
 function handleTouchStart(e) {
     if (!gameStarted) return;
     e.preventDefault();
-    
-    touchPiece = this;
     const touch = e.touches[0];
-    touchStartPos = { x: touch.clientX, y: touch.clientY };
-    
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchPiece = this;
     this.classList.add('dragging');
-    this.style.zIndex = '1000';
 }
 
 function handleTouchMove(e) {
-    if (!touchPiece || !gameStarted) return;
+    if (!touchPiece) return;
     e.preventDefault();
     
     const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStartPos.x;
-    const deltaY = touch.clientY - touchStartPos.y;
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
     
-    touchPiece.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.1)`;
-    
-    
-    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-    document.querySelectorAll('.hover-effect').forEach(el => el.classList.remove('hover-effect'));
-    
-    if (elementBelow && elementBelow.classList.contains('puzzle-piece') && elementBelow !== touchPiece) {
-        elementBelow.classList.add('hover-effect');
-    }
+    touchPiece.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
 }
 
 function handleTouchEnd(e) {
-    if (!touchPiece || !gameStarted) return;
+    if (!touchPiece) return;
     e.preventDefault();
     
     const touch = e.changedTouches[0];
-    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    const endX = touch.clientX;
+    const endY = touch.clientY;
     
-    touchPiece.style.transform = '';
-    touchPiece.style.zIndex = '';
-    touchPiece.classList.remove('dragging');
-    
-    document.querySelectorAll('.hover-effect').forEach(el => el.classList.remove('hover-effect'));
-    
-    if (elementBelow && elementBelow.classList.contains('puzzle-piece') && elementBelow !== touchPiece) {
-        swapPieces(touchPiece, elementBelow);
+    const targetElement = document.elementFromPoint(endX, endY);
+    if (targetElement && targetElement.classList.contains('puzzle-piece') && targetElement !== touchPiece) {
+        swapPieces(touchPiece, targetElement);
         moves++;
         movesDisplay.textContent = moves;
-        
-        elementBelow.classList.add('celebration');
-        setTimeout(() => elementBelow.classList.remove('celebration'), 600);
-        
-        checkWin();
     }
     
+    touchPiece.style.transform = '';
+    touchPiece.classList.remove('dragging');
     touchPiece = null;
+    checkWin();
 }
 
 function swapPieces(piece1, piece2) {
@@ -320,38 +219,8 @@ function swapPieces(piece1, piece2) {
     const index2 = pieces.indexOf(piece2);
     [pieces[index1], pieces[index2]] = [pieces[index2], pieces[index1]];
     
-    playSound('move');
-    calculateScore();
     checkCorrectPositions();
     updateProgress();
-}
-
-function handleGameModeChange() {
-    gameMode = document.getElementById('gameMode').value;
-    const timerDisplay = document.getElementById('timerDisplay');
-    const countdownSpan = document.getElementById('countdown');
-    
-    if (gameMode === 'timed') {
-        timerDisplay.style.display = 'block';
-        timeLimit = 300;
-        updateCountdownDisplay();
-    } else {
-        timerDisplay.style.display = 'none';
-    }
-    
-    resetPowerUps();
-}
-
-function resetPowerUps() {
-    powerUps = {
-        freezeTime: gameMode === 'endless' ? 5 : 3,
-        autoSolve: gameMode === 'timed' ? 0 : 1,
-        showHint: gameMode === 'classic' ? 3 : gameMode === 'timed' ? 1 : 5
-    };
-    
-    document.getElementById('freezeTime').setAttribute('data-count', powerUps.freezeTime);
-    document.getElementById('autoSolve').setAttribute('data-count', powerUps.autoSolve);
-    document.getElementById('showHint').setAttribute('data-count', powerUps.showHint);
 }
 
 function shufflePieces() {
@@ -373,31 +242,17 @@ function shufflePieces() {
 
 function checkCorrectPositions() {
     const gridSize = Math.sqrt(pieces.length);
-    let correctCount = 0;
-    
     pieces.forEach(piece => {
         const currentCol = Math.round(piece.offsetLeft / (puzzle.offsetWidth / gridSize));
         const currentRow = Math.round(piece.offsetTop / (puzzle.offsetHeight / gridSize));
         
-        const wasCorrect = piece.classList.contains('correct');
-        const isCorrect = currentRow === parseInt(piece.dataset.correctRow) && 
-                         currentCol === parseInt(piece.dataset.correctCol);
-        
-        if (isCorrect) {
-            correctCount++;
-            if (!wasCorrect) {
-                piece.classList.add('correct');
-                playSound('correct');
-                createParticles(piece, 5);
-                piece.classList.add('glow');
-                setTimeout(() => piece.classList.remove('glow'), 1000);
-            }
+        if (currentRow === parseInt(piece.dataset.correctRow) && 
+            currentCol === parseInt(piece.dataset.correctCol)) {
+            piece.classList.add('correct');
         } else {
             piece.classList.remove('correct');
         }
     });
-    
-    return correctCount;
 }
 
 function updateProgress() {
@@ -410,80 +265,24 @@ function checkWin() {
     const allCorrect = pieces.every(piece => piece.classList.contains('correct'));
     if (allCorrect) {
         clearInterval(timer);
-        clearInterval(countdownTimer);
-        
-        playSound('win');
-        
-        document.querySelectorAll('.puzzle-piece').forEach((piece, index) => {
-            setTimeout(() => {
-                piece.classList.add('pulse');
-                createParticles(piece, 12);
-            }, index * 100);
-        });
-        
-        calculateScore();
-        const isNewRecord = saveScore();
-        const recordText = isNewRecord ? ' NEW RECORD!' : '';
-        
-        setTimeout(() => {
-            if (gameMode === 'endless') {
-                alert(`Level Complete!${recordText} Score: ${currentScore}`);
-                levelUp();
-            } else {
-                alert(`Congratulations!${recordText} Final Score: ${currentScore}`);
-                gameStarted = false;
-                resetGame();
-            }
-        }, 2000);
+        showVictoryModal();
     }
 }
 
-function levelUp() {
-    const currentDifficulty = parseInt(document.getElementById('difficulty').value);
-    const nextDifficulty = currentDifficulty === 9 ? 16 : currentDifficulty === 16 ? 25 : currentDifficulty === 25 ? 36 : 9;
-    
-    document.getElementById('difficulty').value = nextDifficulty;
-    powerUps.freezeTime += 2;
-    powerUps.autoSolve += 1;
-    powerUps.showHint += 2;
-    
-    document.getElementById('freezeTime').setAttribute('data-count', powerUps.freezeTime);
-    document.getElementById('autoSolve').setAttribute('data-count', powerUps.autoSolve);
-    document.getElementById('showHint').setAttribute('data-count', powerUps.showHint);
-    
-    alert(`Level Complete! Moving to ${nextDifficulty === 9 ? 'Nebula' : nextDifficulty === 16 ? 'Galaxy' : nextDifficulty === 25 ? 'Universe' : 'Cosmos'} difficulty!`);
-    
-    initGame();
+function startTimer() {
+    clearInterval(timer);
+    timer = setInterval(() => {
+        if (!powerUpsActive.freezeTime) {
+            seconds++;
+            updateTimeDisplay();
+        }
+    }, 1000);
 }
 
-function saveScore() {
-    const difficulty = document.getElementById('difficulty').value;
-    const key = `${gameMode}_${difficulty}`;
-    const score = {
-        score: currentScore,
-        time: seconds,
-        moves: moves,
-        timestamp: Date.now()
-    };
-    
-    if (!bestScores[key] || currentScore > bestScores[key].score) {
-        bestScores[key] = score;
-        localStorage.setItem('puzzleBestScores', JSON.stringify(bestScores));
-        updateHighScore();
-        return true;
-    }
-    return false;
-}
-
-function resetGame() {
-    seconds = 0;
-    moves = 0;
-    timeLimit = 300;
-    movesDisplay.textContent = '0';
-    timeDisplay.textContent = '00:00';
-    document.getElementById('timerDisplay').classList.remove('warning');
-    updateCountdownDisplay();
-    resetPowerUps();
+function updateTimeDisplay() {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
 function toggleNumbers() {
@@ -494,54 +293,61 @@ function toggleNumbers() {
     });
 }
 
-function startTimer() {
-    clearInterval(timer);
-    clearInterval(countdownTimer);
-    
-    timer = setInterval(() => {
-        seconds++;
-        updateTimeDisplay();
-    }, 1000);
-    
-    if (gameMode === 'timed') {
-        countdownTimer = setInterval(() => {
-            timeLimit--;
-            updateCountdownDisplay();
-            
-            if (timeLimit <= 60) {
-                document.getElementById('timerDisplay').classList.add('warning');
-            }
-            
-            if (timeLimit <= 0) {
-                gameOver();
-            }
-        }, 1000);
+function activateFreeze() {
+    if (!gameStarted) return;
+    const button = powerButtons.freezeTime;
+    const count = parseInt(button.dataset.count);
+    if (count > 0) {
+        powerUpsActive.freezeTime = true;
+        button.dataset.count = count - 1;
+        button.disabled = count === 1;
+        
+        setTimeout(() => {
+            powerUpsActive.freezeTime = false;
+        }, 5000);
     }
 }
 
-function updateCountdownDisplay() {
-    const minutes = Math.floor(timeLimit / 60);
-    const remainingSeconds = timeLimit % 60;
-    document.getElementById('countdown').textContent = 
-        `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+function activateAutoSolve() {
+    if (!gameStarted) return;
+    const button = powerButtons.autoSolve;
+    const count = parseInt(button.dataset.count);
+    if (count > 0) {
+        button.dataset.count = count - 1;
+        button.disabled = true;
+        
+        const gridSize = Math.sqrt(pieces.length);
+        pieces.forEach((piece, index) => {
+            const correctCol = parseInt(piece.dataset.correctCol);
+            const correctRow = parseInt(piece.dataset.correctRow);
+            piece.style.left = (correctCol * puzzle.offsetWidth / gridSize) + 'px';
+            piece.style.top = (correctRow * puzzle.offsetHeight / gridSize) + 'px';
+        });
+        
+        checkCorrectPositions();
+        updateProgress();
+        checkWin();
+    }
 }
 
-function gameOver() {
-    clearInterval(timer);
-    clearInterval(countdownTimer);
-    gameStarted = false;
-    
-    const startButton = document.getElementById('startGame');
-    startButton.innerHTML = '<i class="fas fa-rocket"></i> Launch';
-    
-    alert('Time\'s up! Game Over!');
-    resetGame();
-}
-
-function updateTimeDisplay() {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+function activateHint() {
+    if (!gameStarted) return;
+    const button = powerButtons.showHint;
+    const count = parseInt(button.dataset.count);
+    if (count > 0) {
+        button.dataset.count = count - 1;
+        button.disabled = count === 1;
+        powerUpsActive.hint = true;
+        
+        const incorrect = pieces.find(piece => !piece.classList.contains('correct'));
+        if (incorrect) {
+            incorrect.style.boxShadow = '0 0 20px var(--accent)';
+            setTimeout(() => {
+                incorrect.style.boxShadow = '';
+                powerUpsActive.hint = false;
+            }, 2000);
+        }
+    }
 }
 
 function handleImageUpload(e) {
@@ -562,102 +368,39 @@ function handleImageUpload(e) {
     }
 }
 
-window.addEventListener('load', () => {
-    const defaultImage = new Image();
-    defaultImage.onload = function() {
-        previewImage.src = defaultImage.src;
-        initGame();
-    };
-    defaultImage.src = 'https://picsum.photos/400/400';
-});
-
-
-function useFreezeTime() {
-    if (powerUps.freezeTime <= 0 || !gameStarted) return;
-    
-    powerUps.freezeTime--;
-    document.getElementById('freezeTime').setAttribute('data-count', powerUps.freezeTime);
-    
-    clearInterval(timer);
-    clearInterval(countdownTimer);
-    
-    const freezeDuration = gameMode === 'timed' ? 5000 : 10000;
-    
-    setTimeout(() => {
-        if (gameStarted) {
-            startTimer();
-        }
-    }, freezeDuration);
-    
-    document.getElementById('freezeTime').classList.add('celebration');
-    setTimeout(() => document.getElementById('freezeTime').classList.remove('celebration'), 600);
+function showVictoryModal() {
+    document.getElementById('finalTime').textContent = timeDisplay.textContent;
+    document.getElementById('finalMoves').textContent = moves;
+    document.getElementById('victoryModal').classList.remove('hidden');
 }
 
-function useAutoSolve() {
-    if (powerUps.autoSolve <= 0 || !gameStarted) return;
-    
-    powerUps.autoSolve--;
-    document.getElementById('autoSolve').setAttribute('data-count', powerUps.autoSolve);
-    
-    
-    const incorrectPieces = pieces.filter(piece => !piece.classList.contains('correct'));
-    if (incorrectPieces.length > 0) {
-        const randomPiece = incorrectPieces[Math.floor(Math.random() * incorrectPieces.length)];
-        const correctPosition = findCorrectPosition(randomPiece);
-        if (correctPosition) {
-            swapPieces(randomPiece, correctPosition);
-            moves++;
-            movesDisplay.textContent = moves;
-            checkWin();
-        }
-    }
-    
-    document.getElementById('autoSolve').classList.add('celebration');
-    setTimeout(() => document.getElementById('autoSolve').classList.remove('celebration'), 600);
-}
-
-function useShowHint() {
-    if (powerUps.showHint <= 0 || !gameStarted) return;
-    
-    powerUps.showHint--;
-    document.getElementById('showHint').setAttribute('data-count', powerUps.showHint);
-    
-    
-    pieces.forEach(piece => {
-        if (!piece.classList.contains('correct')) {
-            piece.style.border = '3px solid #ff6b6b';
-            piece.style.boxShadow = '0 0 20px #ff6b6b';
-        }
+function resetGame() {
+    document.getElementById('victoryModal').classList.add('hidden');
+    gameStarted = false;
+    seconds = 0;
+    updateTimeDisplay();
+    document.getElementById('startGame').innerHTML = '<i class="fas fa-rocket"></i> Launch';
+    Object.values(powerButtons).forEach(button => {
+        button.dataset.count = button.dataset.count || 3;
+        button.disabled = true;
     });
-    
-    setTimeout(() => {
-        pieces.forEach(piece => {
-            piece.style.border = '';
-            piece.style.boxShadow = '';
+    powerButtons.autoSolve.dataset.count = 1;
+    initGame();
+}
+
+function shareScore() {
+    const text = `I completed the Cosmic Puzzle in ${timeDisplay.textContent} with ${moves} moves!`;
+    if (navigator.share) {
+        navigator.share({
+            title: 'Cosmic Puzzle Score',
+            text: text,
         });
-    }, 3000);
-    
-    document.getElementById('showHint').classList.add('celebration');
-    setTimeout(() => document.getElementById('showHint').classList.remove('celebration'), 600);
-}
-
-function findCorrectPosition(piece) {
-    const correctRow = parseInt(piece.dataset.correctRow);
-    const correctCol = parseInt(piece.dataset.correctCol);
-    const gridSize = Math.sqrt(pieces.length);
-    
-    return pieces.find(p => {
-        const currentCol = Math.round(p.offsetLeft / (puzzle.offsetWidth / gridSize));
-        const currentRow = Math.round(p.offsetTop / (puzzle.offsetHeight / gridSize));
-        return currentRow === correctRow && currentCol === correctCol && p !== piece;
-    });
+    } else {
+        navigator.clipboard.writeText(text);
+    }
 }
 
 window.addEventListener('load', () => {
-    toggleSound();
-    toggleSound();
-    updateHighScore();
-    
     const defaultImage = new Image();
     defaultImage.onload = function() {
         previewImage.src = defaultImage.src;

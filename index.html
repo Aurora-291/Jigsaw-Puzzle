@@ -6,15 +6,6 @@
     <title>Jigsaw Puzzle</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <audio id="moveSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmQoByV+zPLZg" type="audio/wav">
-    </audio>
-    <audio id="correctSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm1ZVEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmQo" type="audio/wav">
-    </audio>
-    <audio id="winSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAHB0AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAo" type="audio/wav">
-    </audio>
 </head>
 <body class="dark-theme">
     <div class="theme-toggle">
@@ -24,6 +15,7 @@
             <i class="fas fa-moon"></i>
         </label>
     </div>
+
     <div class="game-wrapper">
         <div class="header">
             <h1>Jigsaw Puzzle</h1>
@@ -46,23 +38,12 @@
         </div>
 
         <div class="control-panel">
-            <div class="game-modes">
-                <select id="gameMode" class="cosmic-select">
-                    <option value="classic">Classic Mode</option>
-                    <option value="timed">Time Attack</option>
-                    <option value="endless">Endless Mode</option>
-                </select>
-                <select id="difficulty" class="cosmic-select">
-                    <option value="9">Nebula (3x3)</option>
-                    <option value="16">Galaxy (4x4)</option>
-                    <option value="25">Universe (5x5)</option>
-                    <option value="36">Cosmos (6x6)</option>
-                </select>
-            </div>
-            <div class="timer-display" id="timerDisplay" style="display: none;">
-                <i class="fas fa-hourglass-half"></i>
-                <span id="countdown">05:00</span>
-            </div>
+            <select id="difficulty" class="cosmic-select">
+                <option value="9">Nebula (3x3)</option>
+                <option value="16">Galaxy (4x4)</option>
+                <option value="25">Universe (5x5)</option>
+            </select>
+
             <div class="button-group">
                 <button id="startGame" class="cosmic-button primary">
                     <i class="fas fa-rocket"></i> Launch
@@ -76,27 +57,16 @@
             </div>
 
             <div class="power-ups">
-                <button id="freezeTime" class="power-button" data-count="3" disabled title="Freeze Timer">
+                <button id="freezeTime" class="power-button" data-count="3" disabled>
                     <i class="fas fa-clock"></i>
                 </button>
-                <button id="autoSolve" class="power-button" data-count="1" disabled title="Auto Solve One Piece">
+                <button id="autoSolve" class="power-button" data-count="1" disabled>
                     <i class="fas fa-wand-sparkles"></i>
                 </button>
-                <button id="showHint" class="power-button" data-count="3" disabled title="Show Hints">
+                <button id="showHint" class="power-button" data-count="3" disabled>
                     <i class="fas fa-satellite"></i>
                 </button>
-                <button id="soundToggle" class="power-button sound-toggle" title="Toggle Sound">
-                    <i class="fas fa-volume-up"></i>
-                </button>
             </div>
-            <div class="score-display">
-                    <div class="current-score">
-                        <span>Score: <span id="currentScore">0</span></span>
-                    </div>
-                    <div class="high-score">
-                        <span>Best: <span id="highScore">--</span></span>
-                    </div>
-                </div>
         </div>
 
         <div class="game-area">
@@ -114,6 +84,20 @@
                 <button id="uploadImage" class="cosmic-button">
                     <i class="fas fa-upload"></i> Import Image
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="victoryModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Victory!</h2>
+            <div class="victory-stats">
+                <p>Time: <span id="finalTime"></span></p>
+                <p>Moves: <span id="finalMoves"></span></p>
+            </div>
+            <div class="modal-buttons">
+                <button id="playAgain" class="cosmic-button primary">New Journey</button>
+                <button id="shareScore" class="cosmic-button">Share!</button>
             </div>
         </div>
     </div>
