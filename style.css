@@ -15,6 +15,24 @@
     --light-shadow: rgba(157, 78, 221, 0.3);
 }
 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.3s, color 0.3s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+}
+
+body {
+    background-color: var(--background);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+    overscroll-behavior: none;
+}
+
 .dark-theme {
     --primary: var(--dark-primary);
     --secondary: var(--dark-secondary);
@@ -33,21 +51,6 @@
     --border: var(--light-border);
     --background: var(--light-background);
     --shadow: var(--light-shadow);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-body {
-    background-color: var(--background);
-    color: var(--text);
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    min-height: 100vh;
-    padding: 20px;
 }
 
 .theme-toggle {
@@ -274,6 +277,7 @@ body {
     box-shadow: 0 8px 30px var(--shadow);
     border: 2px solid var(--border);
     overflow: hidden;
+    touch-action: none;
 }
 
 .preview-section {
