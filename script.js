@@ -5,11 +5,16 @@ let seconds = 0;
 let moves = 0;
 let showNumbers = false;
 let draggedPiece = null;
+let gameMode = 'classic';
+let timeLimit = 300;
+let countdownTimer;
+let bestScores = JSON.parse(localStorage.getItem('puzzleBestScores')) || {};
 let powerUps = {
     freezeTime: 3,
     autoSolve: 1,
     showHint: 3
 };
+
 document.getElementById('startGame').addEventListener('click', startGame);
 document.getElementById('shuffleGame').addEventListener('click', shufflePieces);
 document.getElementById('showNumbers').addEventListener('click', toggleNumbers);
@@ -18,6 +23,7 @@ document.getElementById('imageUpload').addEventListener('change', handleImageUpl
 document.getElementById('freezeTime').addEventListener('click', useFreezeTime);
 document.getElementById('autoSolve').addEventListener('click', useAutoSolve);
 document.getElementById('showHint').addEventListener('click', useShowHint);
+document.getElementById('gameMode').addEventListener('change', handleGameModeChange);
 themeSwitch.addEventListener('change', toggleTheme);
 
 function toggleTheme() {
@@ -79,9 +85,17 @@ function initGame() {
         piece.dataset.correctRow = row;
         piece.dataset.correctCol = col;
         
+        pieces.forEach((piece, index) => {
         if (showNumbers) {
-            piece.innerHTML = `<span>${i + 1}</span>`;
+            piece.innerHTML = `<span>${index + 1}</span>`;
         }
+        
+        const correctPieces = document.querySelectorAll('.puzzle-piece.correct').length;
+        if (gameMode === 'endless' && correctPieces === pieces.length) {
+            levelUp();
+            return;
+        }
+    });
         
         pieces.push(piece);
         piece.draggable = true;
@@ -238,6 +252,34 @@ function swapPieces(piece1, piece2) {
     updateProgress();
 }
 
+function handleGameModeChange() {
+    gameMode = document.getElementById('gameMode').value;
+    const timerDisplay = document.getElementById('timerDisplay');
+    const countdownSpan = document.getElementById('countdown');
+    
+    if (gameMode === 'timed') {
+        timerDisplay.style.display = 'block';
+        timeLimit = 300; // 5 minutes
+        updateCountdownDisplay();
+    } else {
+        timerDisplay.style.display = 'none';
+    }
+    
+    resetPowerUps();
+}
+
+function resetPowerUps() {
+    powerUps = {
+        freezeTime: gameMode === 'endless' ? 5 : 3,
+        autoSolve: gameMode === 'timed' ? 0 : 1,
+        showHint: gameMode === 'classic' ? 3 : gameMode === 'timed' ? 1 : 5
+    };
+    
+    document.getElementById('freezeTime').setAttribute('data-count', powerUps.freezeTime);
+    document.getElementById('autoSolve').setAttribute('data-count', powerUps.autoSolve);
+    document.getElementById('showHint').setAttribute('data-count', powerUps.showHint);
+}
+
 function shufflePieces() {
     if (!gameStarted) return;
     
@@ -280,13 +322,74 @@ function checkWin() {
     const allCorrect = pieces.every(piece => piece.classList.contains('correct'));
     if (allCorrect) {
         clearInterval(timer);
+        clearInterval(countdownTimer);
+        
         document.querySelectorAll('.puzzle-piece').forEach(piece => {
             piece.classList.add('pulse');
         });
+        
+        const isNewRecord = saveScore();
+        const recordText = isNewRecord ? ' NEW RECORD!' : '';
+        
         setTimeout(() => {
-            alert(`Congratulations! You solved it in ${moves} moves and ${timeDisplay.textContent}!`);
+            if (gameMode === 'endless') {
+                alert(`Level Complete!${recordText} Time: ${timeDisplay.textContent}, Moves: ${moves}`);
+                levelUp();
+            } else {
+                alert(`Congratulations!${recordText} You solved it in ${moves} moves and ${timeDisplay.textContent}!`);
+                gameStarted = false;
+                resetGame();
+            }
         }, 1000);
     }
+}
+
+function levelUp() {
+    const currentDifficulty = parseInt(document.getElementById('difficulty').value);
+    const nextDifficulty = currentDifficulty === 9 ? 16 : currentDifficulty === 16 ? 25 : currentDifficulty === 25 ? 36 : 9;
+    
+    document.getElementById('difficulty').value = nextDifficulty;
+    
+    // Bonus power-ups for level completion
+    powerUps.freezeTime += 2;
+    powerUps.autoSolve += 1;
+    powerUps.showHint += 2;
+    
+    document.getElementById('freezeTime').setAttribute('data-count', powerUps.freezeTime);
+    document.getElementById('autoSolve').setAttribute('data-count', powerUps.autoSolve);
+    document.getElementById('showHint').setAttribute('data-count', powerUps.showHint);
+    
+    alert(`Level Complete! Moving to ${nextDifficulty === 9 ? 'Nebula' : nextDifficulty === 16 ? 'Galaxy' : nextDifficulty === 25 ? 'Universe' : 'Cosmos'} difficulty!`);
+    
+    initGame();
+}
+
+function saveScore() {
+    const difficulty = document.getElementById('difficulty').value;
+    const key = `${gameMode}_${difficulty}`;
+    const score = {
+        time: seconds,
+        moves: moves,
+        timestamp: Date.now()
+    };
+    
+    if (!bestScores[key] || seconds < bestScores[key].time) {
+        bestScores[key] = score;
+        localStorage.setItem('puzzleBestScores', JSON.stringify(bestScores));
+        return true;
+    }
+    return false;
+}
+
+function resetGame() {
+    seconds = 0;
+    moves = 0;
+    timeLimit = 300;
+    movesDisplay.textContent = '0';
+    timeDisplay.textContent = '00:00';
+    document.getElementById('timerDisplay').classList.remove('warning');
+    updateCountdownDisplay();
+    resetPowerUps();
 }
 
 function toggleNumbers() {
@@ -299,10 +402,46 @@ function toggleNumbers() {
 
 function startTimer() {
     clearInterval(timer);
+    clearInterval(countdownTimer);
+    
     timer = setInterval(() => {
         seconds++;
         updateTimeDisplay();
     }, 1000);
+    
+    if (gameMode === 'timed') {
+        countdownTimer = setInterval(() => {
+            timeLimit--;
+            updateCountdownDisplay();
+            
+            if (timeLimit <= 60) {
+                document.getElementById('timerDisplay').classList.add('warning');
+            }
+            
+            if (timeLimit <= 0) {
+                gameOver();
+            }
+        }, 1000);
+    }
+}
+
+function updateCountdownDisplay() {
+    const minutes = Math.floor(timeLimit / 60);
+    const remainingSeconds = timeLimit % 60;
+    document.getElementById('countdown').textContent = 
+        `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+function gameOver() {
+    clearInterval(timer);
+    clearInterval(countdownTimer);
+    gameStarted = false;
+    
+    const startButton = document.getElementById('startGame');
+    startButton.innerHTML = '<i class="fas fa-rocket"></i> Launch';
+    
+    alert('Time\'s up! Game Over!');
+    resetGame();
 }
 
 function updateTimeDisplay() {
@@ -346,10 +485,15 @@ function useFreezeTime() {
     document.getElementById('freezeTime').setAttribute('data-count', powerUps.freezeTime);
     
     clearInterval(timer);
-    setTimeout(() => {
-        if (gameStarted) startTimer();
-    }, 10000);
+    clearInterval(countdownTimer);
     
+    const freezeDuration = gameMode === 'timed' ? 5000 : 10000;
+    
+    setTimeout(() => {
+        if (gameStarted) {
+            startTimer();
+        }
+    }, freezeDuration);
     
     document.getElementById('freezeTime').classList.add('celebration');
     setTimeout(() => document.getElementById('freezeTime').classList.remove('celebration'), 600);

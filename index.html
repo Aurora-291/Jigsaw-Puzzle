@@ -38,12 +38,23 @@
         </div>
 
         <div class="control-panel">
-            <select id="difficulty" class="cosmic-select">
-                <option value="9">Nebula (3x3)</option>
-                <option value="16">Galaxy (4x4)</option>
-                <option value="25">Universe (5x5)</option>
-            </select>
-
+            <div class="game-modes">
+                <select id="gameMode" class="cosmic-select">
+                    <option value="classic">Classic Mode</option>
+                    <option value="timed">Time Attack</option>
+                    <option value="endless">Endless Mode</option>
+                </select>
+                <select id="difficulty" class="cosmic-select">
+                    <option value="9">Nebula (3x3)</option>
+                    <option value="16">Galaxy (4x4)</option>
+                    <option value="25">Universe (5x5)</option>
+                    <option value="36">Cosmos (6x6)</option>
+                </select>
+            </div>
+            <div class="timer-display" id="timerDisplay" style="display: none;">
+                <i class="fas fa-hourglass-half"></i>
+                <span id="countdown">05:00</span>
+            </div>
             <div class="button-group">
                 <button id="startGame" class="cosmic-button primary">
                     <i class="fas fa-rocket"></i> Launch
