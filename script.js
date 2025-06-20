@@ -122,9 +122,6 @@ function addDragListeners(piece) {
     piece.addEventListener('dragend', handleDragEnd);
     piece.addEventListener('dragover', handleDragOver);
     piece.addEventListener('drop', handleDrop);
-    piece.addEventListener('touchstart', handleTouchStart);
-    piece.addEventListener('touchmove', handleTouchMove);
-    piece.addEventListener('touchend', handleTouchEnd);
 }
 
 function handleDragStart(e) {
@@ -157,50 +154,6 @@ function handleDrop(e) {
         movesDisplay.textContent = moves;
         checkWin();
     }
-}
-
-let touchStartX, touchStartY, touchPiece;
-
-function handleTouchStart(e) {
-    if (!gameStarted) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    touchPiece = this;
-    this.classList.add('dragging');
-}
-
-function handleTouchMove(e) {
-    if (!touchPiece) return;
-    e.preventDefault();
-    
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStartX;
-    const deltaY = touch.clientY - touchStartY;
-    
-    touchPiece.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-}
-
-function handleTouchEnd(e) {
-    if (!touchPiece) return;
-    e.preventDefault();
-    
-    const touch = e.changedTouches[0];
-    const endX = touch.clientX;
-    const endY = touch.clientY;
-    
-    const targetElement = document.elementFromPoint(endX, endY);
-    if (targetElement && targetElement.classList.contains('puzzle-piece') && targetElement !== touchPiece) {
-        swapPieces(touchPiece, targetElement);
-        moves++;
-        movesDisplay.textContent = moves;
-    }
-    
-    touchPiece.style.transform = '';
-    touchPiece.classList.remove('dragging');
-    touchPiece = null;
-    checkWin();
 }
 
 function swapPieces(piece1, piece2) {

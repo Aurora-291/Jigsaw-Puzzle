@@ -41,7 +41,6 @@
     box-sizing: border-box;
     transition: background-color 0.3s, color 0.3s;
     -webkit-tap-highlight-color: transparent;
-    touch-action: none;
 }
 
 body {
@@ -50,7 +49,6 @@ body {
     font-family: 'Segoe UI', system-ui, sans-serif;
     min-height: 100vh;
     padding: 20px;
-    overscroll-behavior: none;
 }
 
 .theme-toggle {
@@ -277,7 +275,6 @@ body {
     box-shadow: 0 8px 30px var(--shadow);
     border: 2px solid var(--border);
     overflow: hidden;
-    touch-action: none;
 }
 
 .preview-section {
@@ -324,7 +321,6 @@ body {
     border: 2px solid var(--border);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     background-size: cover;
-    touch-action: none;
     user-select: none;
 }
 
@@ -427,5 +423,38 @@ body {
         width: 100%;
         justify-content: center;
         padding: 12px 20px;
+    }
+
+    .control-panel {
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .cosmic-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .power-ups {
+        gap: 15px;
+    }
+
+    .power-button {
+        width: 50px;
+        height: 50px;
+        font-size: 1em;
+    }
+
+    .modal-content {
+        margin: 20px;
+        padding: 25px;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
     }
 }
