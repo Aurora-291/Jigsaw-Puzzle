@@ -4,19 +4,20 @@ let timer;
 let seconds = 0;
 let moves = 0;
 let showNumbers = false;
-
-const puzzle = document.getElementById('puzzle');
-const previewImage = document.getElementById('previewImage');
-const progressBar = document.getElementById('progressBar');
-const timeDisplay = document.getElementById('time');
-const movesDisplay = document.getElementById('moves');
-const themeSwitch = document.getElementById('themeSwitch');
-
+let draggedPiece = null;
+let powerUps = {
+    freezeTime: 3,
+    autoSolve: 1,
+    showHint: 3
+};
 document.getElementById('startGame').addEventListener('click', startGame);
 document.getElementById('shuffleGame').addEventListener('click', shufflePieces);
 document.getElementById('showNumbers').addEventListener('click', toggleNumbers);
 document.getElementById('uploadImage').addEventListener('click', () => document.getElementById('imageUpload').click());
 document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
+document.getElementById('freezeTime').addEventListener('click', useFreezeTime);
+document.getElementById('autoSolve').addEventListener('click', useAutoSolve);
+document.getElementById('showHint').addEventListener('click', useShowHint);
 themeSwitch.addEventListener('change', toggleTheme);
 
 function toggleTheme() {
@@ -97,17 +98,36 @@ function addDragListeners(piece) {
     piece.addEventListener('dragend', handleDragEnd);
     piece.addEventListener('dragover', handleDragOver);
     piece.addEventListener('drop', handleDrop);
+    piece.addEventListener('dragenter', handleDragEnter);
+    piece.addEventListener('dragleave', handleDragLeave);
+    
+    piece.addEventListener('touchstart', handleTouchStart, { passive: false });
+    piece.addEventListener('touchmove', handleTouchMove, { passive: false });
+    piece.addEventListener('touchend', handleTouchEnd, { passive: false });
 }
 
 function handleDragStart(e) {
     if (!gameStarted) return;
     this.classList.add('dragging');
+    draggedPiece = this;
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.outerHTML);
 }
 
 function handleDragEnd() {
     this.classList.remove('dragging');
+    draggedPiece = null;
+    document.querySelectorAll('.drop-zone').forEach(el => el.classList.remove('drop-zone'));
     checkWin();
+}
+function handleDragEnter(e) {
+    if (draggedPiece && draggedPiece !== this) {
+        this.classList.add('drop-zone');
+    }
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drop-zone');
 }
 
 function handleDragOver(e) {
@@ -122,13 +142,80 @@ function handleDrop(e) {
     e.preventDefault();
     if (!gameStarted) return;
     
-    const draggingPiece = document.querySelector('.dragging');
-    if (draggingPiece && draggingPiece !== this) {
-        swapPieces(draggingPiece, this);
+    this.classList.remove('drop-zone');
+    
+    if (draggedPiece && draggedPiece !== this) {
+        swapPieces(draggedPiece, this);
         moves++;
         movesDisplay.textContent = moves;
+        
+        this.classList.add('celebration');
+        setTimeout(() => this.classList.remove('celebration'), 600);
+        
         checkWin();
     }
+}
+
+
+let touchStartPos = { x: 0, y: 0 };
+let touchPiece = null;
+
+function handleTouchStart(e) {
+    if (!gameStarted) return;
+    e.preventDefault();
+    
+    touchPiece = this;
+    const touch = e.touches[0];
+    touchStartPos = { x: touch.clientX, y: touch.clientY };
+    
+    this.classList.add('dragging');
+    this.style.zIndex = '1000';
+}
+
+function handleTouchMove(e) {
+    if (!touchPiece || !gameStarted) return;
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartPos.x;
+    const deltaY = touch.clientY - touchStartPos.y;
+    
+    touchPiece.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.1)`;
+    
+    
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    document.querySelectorAll('.hover-effect').forEach(el => el.classList.remove('hover-effect'));
+    
+    if (elementBelow && elementBelow.classList.contains('puzzle-piece') && elementBelow !== touchPiece) {
+        elementBelow.classList.add('hover-effect');
+    }
+}
+
+function handleTouchEnd(e) {
+    if (!touchPiece || !gameStarted) return;
+    e.preventDefault();
+    
+    const touch = e.changedTouches[0];
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    touchPiece.style.transform = '';
+    touchPiece.style.zIndex = '';
+    touchPiece.classList.remove('dragging');
+    
+    document.querySelectorAll('.hover-effect').forEach(el => el.classList.remove('hover-effect'));
+    
+    if (elementBelow && elementBelow.classList.contains('puzzle-piece') && elementBelow !== touchPiece) {
+        swapPieces(touchPiece, elementBelow);
+        moves++;
+        movesDisplay.textContent = moves;
+        
+        elementBelow.classList.add('celebration');
+        setTimeout(() => elementBelow.classList.remove('celebration'), 600);
+        
+        checkWin();
+    }
+    
+    touchPiece = null;
 }
 
 function swapPieces(piece1, piece2) {
@@ -193,7 +280,12 @@ function checkWin() {
     const allCorrect = pieces.every(piece => piece.classList.contains('correct'));
     if (allCorrect) {
         clearInterval(timer);
-        alert('Congratulations! You won!');
+        document.querySelectorAll('.puzzle-piece').forEach(piece => {
+            piece.classList.add('pulse');
+        });
+        setTimeout(() => {
+            alert(`Congratulations! You solved it in ${moves} moves and ${timeDisplay.textContent}!`);
+        }, 1000);
     }
 }
 
@@ -245,3 +337,80 @@ window.addEventListener('load', () => {
     };
     defaultImage.src = 'https://picsum.photos/400/400';
 });
+
+
+function useFreezeTime() {
+    if (powerUps.freezeTime <= 0 || !gameStarted) return;
+    
+    powerUps.freezeTime--;
+    document.getElementById('freezeTime').setAttribute('data-count', powerUps.freezeTime);
+    
+    clearInterval(timer);
+    setTimeout(() => {
+        if (gameStarted) startTimer();
+    }, 10000);
+    
+    
+    document.getElementById('freezeTime').classList.add('celebration');
+    setTimeout(() => document.getElementById('freezeTime').classList.remove('celebration'), 600);
+}
+
+function useAutoSolve() {
+    if (powerUps.autoSolve <= 0 || !gameStarted) return;
+    
+    powerUps.autoSolve--;
+    document.getElementById('autoSolve').setAttribute('data-count', powerUps.autoSolve);
+    
+    
+    const incorrectPieces = pieces.filter(piece => !piece.classList.contains('correct'));
+    if (incorrectPieces.length > 0) {
+        const randomPiece = incorrectPieces[Math.floor(Math.random() * incorrectPieces.length)];
+        const correctPosition = findCorrectPosition(randomPiece);
+        if (correctPosition) {
+            swapPieces(randomPiece, correctPosition);
+            moves++;
+            movesDisplay.textContent = moves;
+            checkWin();
+        }
+    }
+    
+    document.getElementById('autoSolve').classList.add('celebration');
+    setTimeout(() => document.getElementById('autoSolve').classList.remove('celebration'), 600);
+}
+
+function useShowHint() {
+    if (powerUps.showHint <= 0 || !gameStarted) return;
+    
+    powerUps.showHint--;
+    document.getElementById('showHint').setAttribute('data-count', powerUps.showHint);
+    
+    
+    pieces.forEach(piece => {
+        if (!piece.classList.contains('correct')) {
+            piece.style.border = '3px solid #ff6b6b';
+            piece.style.boxShadow = '0 0 20px #ff6b6b';
+        }
+    });
+    
+    setTimeout(() => {
+        pieces.forEach(piece => {
+            piece.style.border = '';
+            piece.style.boxShadow = '';
+        });
+    }, 3000);
+    
+    document.getElementById('showHint').classList.add('celebration');
+    setTimeout(() => document.getElementById('showHint').classList.remove('celebration'), 600);
+}
+
+function findCorrectPosition(piece) {
+    const correctRow = parseInt(piece.dataset.correctRow);
+    const correctCol = parseInt(piece.dataset.correctCol);
+    const gridSize = Math.sqrt(pieces.length);
+    
+    return pieces.find(p => {
+        const currentCol = Math.round(p.offsetLeft / (puzzle.offsetWidth / gridSize));
+        const currentRow = Math.round(p.offsetTop / (puzzle.offsetHeight / gridSize));
+        return currentRow === correctRow && currentCol === correctCol && p !== piece;
+    });
+}
