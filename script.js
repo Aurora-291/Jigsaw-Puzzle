@@ -9,10 +9,18 @@ let gameMode = 'classic';
 let timeLimit = 300;
 let countdownTimer;
 let bestScores = JSON.parse(localStorage.getItem('puzzleBestScores')) || {};
+let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+let currentScore = 0;
 let powerUps = {
     freezeTime: 3,
     autoSolve: 1,
     showHint: 3
+};
+
+const sounds = {
+    move: document.getElementById('moveSound'),
+    correct: document.getElementById('correctSound'),
+    win: document.getElementById('winSound')
 };
 
 document.getElementById('startGame').addEventListener('click', startGame);
@@ -24,6 +32,7 @@ document.getElementById('freezeTime').addEventListener('click', useFreezeTime);
 document.getElementById('autoSolve').addEventListener('click', useAutoSolve);
 document.getElementById('showHint').addEventListener('click', useShowHint);
 document.getElementById('gameMode').addEventListener('change', handleGameModeChange);
+document.getElementById('soundToggle').addEventListener('click', toggleSound);
 themeSwitch.addEventListener('change', toggleTheme);
 
 function toggleTheme() {
@@ -53,6 +62,69 @@ function startGame() {
         document.getElementById('autoSolve').disabled = true;
         document.getElementById('showHint').disabled = true;
     }
+}
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('soundEnabled', soundEnabled);
+    
+    const soundButton = document.getElementById('soundToggle');
+    const icon = soundButton.querySelector('i');
+    
+    if (soundEnabled) {
+        icon.className = 'fas fa-volume-up';
+        soundButton.classList.remove('muted');
+    } else {
+        icon.className = 'fas fa-volume-mute';
+        soundButton.classList.add('muted');
+    }
+}
+
+function playSound(soundName) {
+    if (soundEnabled && sounds[soundName]) {
+        sounds[soundName].currentTime = 0;
+        sounds[soundName].play().catch(() => {});
+    }
+}
+
+function createParticles(element, count = 8) {
+    const rect = element.getBoundingClientRect();
+    const container = element.closest('.puzzle-board') || document.body;
+    
+    for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = (rect.left + rect.width / 2) + 'px';
+        particle.style.top = (rect.top + rect.height / 2) + 'px';
+        particle.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+        
+        const angle = (i / count) * Math.PI * 2;
+        const velocity = 50 + Math.random() * 50;
+        particle.style.setProperty('--dx', Math.cos(angle) * velocity + 'px');
+        particle.style.setProperty('--dy', Math.sin(angle) * velocity + 'px');
+        
+        document.body.appendChild(particle);
+        
+        setTimeout(() => particle.remove(), 2000);
+    }
+}
+
+function calculateScore() {
+    const baseScore = 1000;
+    const timePenalty = seconds * 2;
+    const movePenalty = moves * 5;
+    const difficultyBonus = parseInt(document.getElementById('difficulty').value) * 10;
+    const modeMultiplier = gameMode === 'timed' ? 1.5 : gameMode === 'endless' ? 2 : 1;
+    
+    currentScore = Math.max(0, Math.floor((baseScore - timePenalty - movePenalty + difficultyBonus) * modeMultiplier));
+    document.getElementById('currentScore').textContent = currentScore;
+}
+
+function updateHighScore() {
+    const difficulty = document.getElementById('difficulty').value;
+    const key = `${gameMode}_${difficulty}`;
+    const highScore = bestScores[key]?.score || 0;
+    document.getElementById('highScore').textContent = highScore || '--';
 }
 
 function initGame() {
@@ -248,6 +320,8 @@ function swapPieces(piece1, piece2) {
     const index2 = pieces.indexOf(piece2);
     [pieces[index1], pieces[index2]] = [pieces[index2], pieces[index1]];
     
+    playSound('move');
+    calculateScore();
     checkCorrectPositions();
     updateProgress();
 }
@@ -259,7 +333,7 @@ function handleGameModeChange() {
     
     if (gameMode === 'timed') {
         timerDisplay.style.display = 'block';
-        timeLimit = 300; // 5 minutes
+        timeLimit = 300;
         updateCountdownDisplay();
     } else {
         timerDisplay.style.display = 'none';
@@ -299,17 +373,31 @@ function shufflePieces() {
 
 function checkCorrectPositions() {
     const gridSize = Math.sqrt(pieces.length);
+    let correctCount = 0;
+    
     pieces.forEach(piece => {
         const currentCol = Math.round(piece.offsetLeft / (puzzle.offsetWidth / gridSize));
         const currentRow = Math.round(piece.offsetTop / (puzzle.offsetHeight / gridSize));
         
-        if (currentRow === parseInt(piece.dataset.correctRow) && 
-            currentCol === parseInt(piece.dataset.correctCol)) {
-            piece.classList.add('correct');
+        const wasCorrect = piece.classList.contains('correct');
+        const isCorrect = currentRow === parseInt(piece.dataset.correctRow) && 
+                         currentCol === parseInt(piece.dataset.correctCol);
+        
+        if (isCorrect) {
+            correctCount++;
+            if (!wasCorrect) {
+                piece.classList.add('correct');
+                playSound('correct');
+                createParticles(piece, 5);
+                piece.classList.add('glow');
+                setTimeout(() => piece.classList.remove('glow'), 1000);
+            }
         } else {
             piece.classList.remove('correct');
         }
     });
+    
+    return correctCount;
 }
 
 function updateProgress() {
@@ -324,23 +412,29 @@ function checkWin() {
         clearInterval(timer);
         clearInterval(countdownTimer);
         
-        document.querySelectorAll('.puzzle-piece').forEach(piece => {
-            piece.classList.add('pulse');
+        playSound('win');
+        
+        document.querySelectorAll('.puzzle-piece').forEach((piece, index) => {
+            setTimeout(() => {
+                piece.classList.add('pulse');
+                createParticles(piece, 12);
+            }, index * 100);
         });
         
+        calculateScore();
         const isNewRecord = saveScore();
         const recordText = isNewRecord ? ' NEW RECORD!' : '';
         
         setTimeout(() => {
             if (gameMode === 'endless') {
-                alert(`Level Complete!${recordText} Time: ${timeDisplay.textContent}, Moves: ${moves}`);
+                alert(`Level Complete!${recordText} Score: ${currentScore}`);
                 levelUp();
             } else {
-                alert(`Congratulations!${recordText} You solved it in ${moves} moves and ${timeDisplay.textContent}!`);
+                alert(`Congratulations!${recordText} Final Score: ${currentScore}`);
                 gameStarted = false;
                 resetGame();
             }
-        }, 1000);
+        }, 2000);
     }
 }
 
@@ -349,8 +443,6 @@ function levelUp() {
     const nextDifficulty = currentDifficulty === 9 ? 16 : currentDifficulty === 16 ? 25 : currentDifficulty === 25 ? 36 : 9;
     
     document.getElementById('difficulty').value = nextDifficulty;
-    
-    // Bonus power-ups for level completion
     powerUps.freezeTime += 2;
     powerUps.autoSolve += 1;
     powerUps.showHint += 2;
@@ -368,14 +460,16 @@ function saveScore() {
     const difficulty = document.getElementById('difficulty').value;
     const key = `${gameMode}_${difficulty}`;
     const score = {
+        score: currentScore,
         time: seconds,
         moves: moves,
         timestamp: Date.now()
     };
     
-    if (!bestScores[key] || seconds < bestScores[key].time) {
+    if (!bestScores[key] || currentScore > bestScores[key].score) {
         bestScores[key] = score;
         localStorage.setItem('puzzleBestScores', JSON.stringify(bestScores));
+        updateHighScore();
         return true;
     }
     return false;
@@ -558,3 +652,16 @@ function findCorrectPosition(piece) {
         return currentRow === correctRow && currentCol === correctCol && p !== piece;
     });
 }
+
+window.addEventListener('load', () => {
+    toggleSound();
+    toggleSound();
+    updateHighScore();
+    
+    const defaultImage = new Image();
+    defaultImage.onload = function() {
+        previewImage.src = defaultImage.src;
+        initGame();
+    };
+    defaultImage.src = 'https://picsum.photos/400/400';
+});
